@@ -1,7 +1,7 @@
 import numpy as np
 import re
 import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import torch
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -11,11 +11,77 @@ warnings.filterwarnings('ignore')
 
 # Pobierz niezbędne zasoby NLTK
 try:
-    nltk.data.find('vader_lexicon')
+    nltk.data.find('punkt')
 except LookupError:
-    nltk.download('vader_lexicon')
     nltk.download('punkt')
     nltk.download('stopwords')
+
+class PolishSentimentAnalyzer:
+    """
+    Klasa opakowująca model HuggingFace do analizy sentymentu w języku polskim,
+    implementująca interfejs zgodny z VADER dla ułatwienia wymiany.
+    """
+    def __init__(self):
+        try:
+            from transformers import AutoTokenizer, AutoModelForSequenceClassification
+            
+            # Używamy modelu dla języka polskiego przeznaczonego do analizy sentymentu
+            model_name = "Voicelab/herbert-base-cased-sentiment"
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+            self.model.eval()  # Ustawiamy model w trybie ewaluacji
+            self.is_huggingface = True
+            print("Załadowano polski model analizy sentymentu")
+        except Exception as e:
+            # Zachowanie VADER jako fallback
+            print(f"Nie udało się załadować polskiego modelu sentymentu: {e}")
+            print("Używanie VADER jako zapasowego analizatora (uwaga: wyniki dla języka polskiego mogą być niedokładne)")
+            from nltk.sentiment.vader import SentimentIntensityAnalyzer
+            self.analyzer = SentimentIntensityAnalyzer()
+            self.is_huggingface = False
+            try:
+                nltk.data.find('vader_lexicon')
+            except LookupError:
+                nltk.download('vader_lexicon')
+    
+    def polarity_scores(self, text):
+        """
+        Analiza sentymentu tekstu, zachowanie kompatybilne z VADER.
+        
+        Parametry:
+        -----------
+        text: str
+            Tekst do analizy
+            
+        Zwraca:
+        --------
+        sentiment: dict
+            Słownik z wynikami sentymentu (neg, neu, pos, compound)
+        """
+        if self.is_huggingface:
+            # Dla modelu HuggingFace
+            inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=512, padding=True)
+            
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+                scores = torch.nn.functional.softmax(outputs.logits, dim=1)
+            
+            # Polskie modele zwykle mają klasy w kolejności: [negatywny, neutralny, pozytywny]
+            neg, neu, pos = scores[0].tolist()
+            
+            # Obliczanie wartości compound podobnie jak w VADER
+            # Wartość od -1 (całkowicie negatywna) do 1 (całkowicie pozytywna)
+            compound = pos - neg
+            
+            return {
+                'neg': neg,
+                'neu': neu,
+                'pos': pos,
+                'compound': compound
+            }
+        else:
+            # Dla VADER
+            return self.analyzer.polarity_scores(text)
 
 class EconomicCrisisPredictor:
     """
@@ -33,7 +99,8 @@ class EconomicCrisisPredictor:
         use_pretrained: bool
             Czy używać wstępnie wytrenowanego transformera zdań do osadzania
         """
-        self.sentiment_analyzer = SentimentIntensityAnalyzer()
+        # Inicjalizacja analizatora sentymentu
+        self.sentiment_analyzer = PolishSentimentAnalyzer()
         
         # Słownik terminów związanych z kryzysem
         from data.crisis_lexicon import crisis_lexicon
@@ -62,8 +129,9 @@ class EconomicCrisisPredictor:
             try:
                 from sentence_transformers import SentenceTransformer
                 self.sentence_model = SentenceTransformer('OrlikB/st-polish-kartonberta-base-alpha-v1')
-            except:
-                print("Nie udało się załadować SentenceTransformer. Używanie TF-IDF zamiast tego.")
+            except Exception as e:
+                print(f"Nie udało się załadować SentenceTransformer: {e}")
+                print("Używanie TF-IDF zamiast tego.")
                 self.use_pretrained = False
                 self.tfidf_vectorizer = TfidfVectorizer(max_features=1000)
         else:
