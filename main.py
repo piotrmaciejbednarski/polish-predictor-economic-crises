@@ -27,7 +27,9 @@ def main():
     import time
     start_time = time.time()
     
-    print("\nPredyktor kryzysów ekonomicznych\n")
+    print("\nPredyktor kryzysów ekonomicznych, Piotr Bednarski")
+    print(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+    
     for i, text in enumerate(test_texts):
         result = predictor.predict(text)
         all_results.append(result)
