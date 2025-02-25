@@ -1,0 +1,21 @@
+# Frazy niepewności ekonomicznej (rozszerzone)
+uncertainty_phrases = [
+    'niepewne perspektywy', 'rosnące obawy', 'obawy rynkowe', 'niejasna przyszłość',
+    'potencjalne ryzyka', 'niepewność gospodarcza', 'niepokojące oznaki', 'sygnały ostrzegawcze',
+    'może prowadzić do', 'może skutkować', 'niestabilność finansowa', 'ryzyko systemowe',
+    'podatność rynku', 'nieprzewidziane konsekwencje', 'ekonomiści ostrzegają',
+    'ryzyko zarażenia', 'bańka spekulacyjna', 'niezrównoważony wzrost',
+    'niepewność rośnie', 'mieszane sygnały', 'niewielki spadek', 'pogorszenie koniunktury',
+    'brak stabilności', 'możliwa korekta', 'wzrost ryzyka', 'trudno przewidzieć',
+    'niepewna sytuacja', 'zmienne warunki', 'wahania rynku', 'niejasne prognozy',
+    'potencjalne trudności', 'obawy o przyszłość', 'niepewność polityczna',
+    'ryzyko recesji', 'zagrożenie inflacją', 'obawy o bezrobocie', 'niepewność regulacyjna',
+    'możliwe zakłócenia', 'prawdopodobne zmiany', 'trudna sytuacja', 'nieprzewidywalne zdarzenia',
+    'ryzyko niewypłacalności', 'obawy o dług publiczny', 'niepewność handlowa',
+    'ryzyko kryzysu walutowego', 'obawy o sektor bankowy', 'potencjalne straty',
+    'zwiększona zmienność', 'niepewność inwestycyjna', 'obawy o stabilność rynków',
+    'ryzyko pęknięcia bańki', 'niejasne perspektywy wzrostu', 'obawy o globalną gospodarkę',
+    'potencjalne załamanie', 'niepewność geopolityczna', 'ryzyko konfliktu',
+    'obawy o łańcuchy dostaw', 'potencjalne niedobory', 'niepewność energetyczna',
+    'ryzyko kryzysu surowcowego', 'obawy o sektor nieruchomości', 'potencjalne straty finansowe',
+]
