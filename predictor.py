@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 import warnings
 warnings.filterwarnings('ignore')
 
-# Download necessary NLTK resources
+# Pobierz niezbędne zasoby NLTK
 try:
     nltk.data.find('vader_lexicon')
 except LookupError:
@@ -19,19 +19,19 @@ except LookupError:
 
 class EconomicCrisisPredictor:
     """
-    Economic Crisis Predictor based on NLP analysis of economic news.
-    This simplified architecture combines sentiment analysis, contextual embedding, 
-    and crisis-specific lexical features to predict crisis probability.
+    Predyktor Kryzysu Ekonomicznego oparty na analizie NLP wiadomości ekonomicznych.
+    Ta uproszczona architektura łączy analizę sentymentu, osadzanie kontekstowe 
+    oraz specyficzne dla kryzysu cechy leksykalne w celu przewidywania prawdopodobieństwa kryzysu.
     """
     
     def __init__(self, use_pretrained=True):
         """
-        Initialize the crisis predictor model
+        Inicjalizacja modelu predykcji kryzysu
         
-        Parameters:
+        Parametry:
         -----------
         use_pretrained: bool
-            Whether to use pre-trained sentence transformer for embeddings
+            Czy używać wstępnie wytrenowanego transformera zdań do osadzania
         """
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
         
@@ -43,50 +43,50 @@ class EconomicCrisisPredictor:
         from data.uncertainty import uncertainty_phrases
         self.uncertainty_phrases = uncertainty_phrases
         
-        # Initialize text vectorizer for crisis keywords
+        # Inicjalizacja wektoryzatora tekstu dla słów kluczowych kryzysu
         self.crisis_vectorizer = CountVectorizer(
             vocabulary=list(self.crisis_lexicon.keys()),
             binary=False
         )
         
-        # Initialize text vectorizer for uncertainty phrases
+        # Inicjalizacja wektoryzatora tekstu dla fraz niepewności
         self.uncertainty_vectorizer = CountVectorizer(
             vocabulary=[p.lower() for p in self.uncertainty_phrases],
             ngram_range=(1, 3),
             binary=True
         )
         
-        # Initialize embedding method
+        # Inicjalizacja metody osadzania tekstu
         self.use_pretrained = use_pretrained
         if use_pretrained:
             try:
                 from sentence_transformers import SentenceTransformer
                 self.sentence_model = SentenceTransformer('OrlikB/st-polish-kartonberta-base-alpha-v1')
             except:
-                print("Could not load SentenceTransformer. Using TF-IDF instead.")
+                print("Nie udało się załadować SentenceTransformer. Używanie TF-IDF zamiast tego.")
                 self.use_pretrained = False
                 self.tfidf_vectorizer = TfidfVectorizer(max_features=1000)
         else:
             self.tfidf_vectorizer = TfidfVectorizer(max_features=1000)
         
-        # Crisis prediction model
+        # Model predykcji kryzysu
         self.crisis_model = None
         
     def extract_features(self, texts):
         """
-        Extract features from texts for crisis prediction
+        Ekstrakcja cech z tekstów do predykcji kryzysu
         
-        Parameters:
+        Parametry:
         -----------
-        texts: list of str
-            List of economic texts to analyze
+        texts: lista str
+            Lista tekstów ekonomicznych do analizy
         
-        Returns:
+        Zwraca:
         --------
         features: numpy.ndarray
-            Feature matrix for crisis prediction
+            Macierz cech do predykcji kryzysu
         """
-        # Extract sentiment scores
+        # Ekstrakcja wyników sentymentu
         sentiment_scores = []
         for text in texts:
             scores = self.sentiment_analyzer.polarity_scores(text)
@@ -94,34 +94,34 @@ class EconomicCrisisPredictor:
         
         sentiment_features = np.array(sentiment_scores)
         
-        # Extract crisis keyword features
+        # Ekstrakcja cech słów kluczowych kryzysu
         if len(texts) > 0:
-            # Convert to float64 to avoid type mismatch issues
+            # Konwersja do float64, aby uniknąć problemów z niezgodnością typów
             crisis_features = self.crisis_vectorizer.transform(texts).toarray().astype(np.float64)
             
-            # Weight the crisis features by their lexicon values
+            # Ważenie cech kryzysowych wartościami z leksykonu
             for i, word in enumerate(self.crisis_lexicon.keys()):
                 crisis_features[:, i] *= self.crisis_lexicon[word]
                 
-            # Extract uncertainty phrases
+            # Ekstrakcja fraz niepewności
             uncertainty_features = self.uncertainty_vectorizer.transform(texts).toarray()
             
-            # Calculate additional statistical features
-            # 1. Crisis keywords density
+            # Obliczanie dodatkowych cech statystycznych
+            # 1. Gęstość słów kluczowych kryzysu
             text_lengths = np.array([len(text.split()) for text in texts]).reshape(-1, 1)
             keyword_density = np.sum(crisis_features, axis=1).reshape(-1, 1) / np.maximum(text_lengths, 1)
             
-            # 2. Crisis keyword diversity
+            # 2. Różnorodność słów kluczowych kryzysu
             keyword_presence = (crisis_features > 0).astype(int)
             keyword_diversity = np.sum(keyword_presence, axis=1).reshape(-1, 1) / len(self.crisis_lexicon)
             
-            # 3. Crisis severity score (weighted average of crisis keywords)
+            # 3. Wynik nasilenia kryzysu (ważona średnia słów kluczowych kryzysu)
             severity_score = np.sum(crisis_features, axis=1).reshape(-1, 1) / np.maximum(np.sum(keyword_presence, axis=1), 1).reshape(-1, 1)
             
-            # 4. Uncertainty score
+            # 4. Wynik niepewności
             uncertainty_score = np.sum(uncertainty_features, axis=1).reshape(-1, 1)
         else:
-            # Handle empty list case
+            # Obsługa przypadku pustej listy
             crisis_features = np.empty((0, len(self.crisis_lexicon)))
             uncertainty_features = np.empty((0, len(self.uncertainty_phrases)))
             keyword_density = np.empty((0, 1))
@@ -129,7 +129,7 @@ class EconomicCrisisPredictor:
             severity_score = np.empty((0, 1))
             uncertainty_score = np.empty((0, 1))
         
-        # Text embeddings
+        # Osadzanie tekstu
         if self.use_pretrained:
             if len(texts) > 0:
                 embeddings = self.sentence_model.encode(texts)
@@ -137,12 +137,12 @@ class EconomicCrisisPredictor:
                 embeddings = np.empty((0, self.sentence_model.get_sentence_embedding_dimension()))
         else:
             if len(texts) > 0:
-                # Use TF-IDF for embeddings when pretrained model is not available
+                # Używanie TF-IDF do osadzania, gdy model wstępnie wytrenowany nie jest dostępny
                 embeddings = self.tfidf_vectorizer.fit_transform(texts).toarray()
             else:
                 embeddings = np.empty((0, 0))
         
-        # Combine all features
+        # Łączenie wszystkich cech
         if len(texts) > 0:
             statistical_features = np.hstack([
                 keyword_density, 
@@ -151,7 +151,7 @@ class EconomicCrisisPredictor:
                 uncertainty_score
             ])
             
-            # Concatenate all feature sets
+            # Konkatenacja wszystkich zestawów cech
             features = np.hstack([
                 sentiment_features,
                 crisis_features,
@@ -168,40 +168,40 @@ class EconomicCrisisPredictor:
     
     def analyze_sentiment(self, text):
         """
-        Analyze sentiment of a text
+        Analiza sentymentu tekstu
         
-        Parameters:
+        Parametry:
         -----------
         text: str
-            Economic text to analyze
+            Tekst ekonomiczny do analizy
         
-        Returns:
+        Zwraca:
         --------
         sentiment: dict
-            Dictionary with sentiment scores
+            Słownik z wynikami sentymentu
         """
         return self.sentiment_analyzer.polarity_scores(text)
     
     def fit(self, texts, crisis_labels):
         """
-        Train the crisis prediction model
+        Trenowanie modelu predykcji kryzysu
         
-        Parameters:
+        Parametry:
         -----------
-        texts: list of str
-            List of economic texts
-        crisis_labels: list of int
-            Binary labels (1 = crisis, 0 = no crisis)
+        texts: lista str
+            Lista tekstów ekonomicznych
+        crisis_labels: lista int
+            Etykiety binarne (1 = kryzys, 0 = brak kryzysu)
         """
-        # Extract features
+        # Ekstrakcja cech
         X = self.extract_features(texts)
         y = np.array(crisis_labels)
         
-        # Split data
+        # Podział danych
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
         
-        # Train ensemble model
-        # Using RandomForest for robustness and handling of different feature types
+        # Trenowanie modelu zespołowego
+        # Używanie RandomForest dla odporności i obsługi różnych typów cech
         self.crisis_model = RandomForestClassifier(
             n_estimators=100,
             max_depth=10,
@@ -209,44 +209,44 @@ class EconomicCrisisPredictor:
             random_state=42
         )
         
-        # Train model
+        # Trenowanie modelu
         self.crisis_model.fit(X_train, y_train)
         
-        # Evaluate model
+        # Ewaluacja modelu
         train_preds = self.crisis_model.predict(X_train)
         val_preds = self.crisis_model.predict(X_val)
         train_proba = self.crisis_model.predict_proba(X_train)[:, 1]
         val_proba = self.crisis_model.predict_proba(X_val)[:, 1]
         
-        print("Training accuracy:", accuracy_score(y_train, train_preds))
-        print("Validation accuracy:", accuracy_score(y_val, val_preds))
-        print("Training AUC-ROC:", roc_auc_score(y_train, train_proba))
-        print("Validation AUC-ROC:", roc_auc_score(y_val, val_proba))
+        print("Dokładność treningowa:", accuracy_score(y_train, train_preds))
+        print("Dokładność walidacyjna:", accuracy_score(y_val, val_preds))
+        print("AUC-ROC treningowy:", roc_auc_score(y_train, train_proba))
+        print("AUC-ROC walidacyjny:", roc_auc_score(y_val, val_proba))
         
     def predict(self, text):
         """
-        Predict crisis probability from text
+        Przewidywanie prawdopodobieństwa kryzysu na podstawie tekstu
         
-        Parameters:
+        Parametry:
         -----------
         text: str
-            Economic text to analyze
+            Tekst ekonomiczny do analizy
         
-        Returns:
+        Zwraca:
         --------
         result: dict
-            Dictionary with sentiment score and crisis probability
+            Słownik z wynikiem sentymentu i prawdopodobieństwem kryzysu
         """
-        # Analyze sentiment
+        # Analiza sentymentu
         sentiment = self.analyze_sentiment(text)
         
-        # Extract features
+        # Ekstrakcja cech
         features = self.extract_features([text])
         
-        # Predict crisis probability
+        # Przewidywanie prawdopodobieństwa kryzysu
         crisis_prob = self.crisis_model.predict_proba(features)[0, 1]
         
-        # Calculate crisis score based on lexicon as a sanity check
+        # Obliczanie wyniku kryzysu na podstawie leksykonu jako kontrola sanity
         crisis_score = 0
         word_count = len(text.split())
         
@@ -256,7 +256,7 @@ class EconomicCrisisPredictor:
         
         crisis_score = min(1.0, crisis_score / (word_count * 0.05))
         
-        # Calculate uncertainty score
+        # Obliczanie wyniku niepewności
         uncertainty_score = 0
         for phrase in self.uncertainty_phrases:
             if phrase.lower() in text.lower():
@@ -264,7 +264,7 @@ class EconomicCrisisPredictor:
         
         uncertainty_score = min(1.0, uncertainty_score / len(self.uncertainty_phrases))
         
-        # Get feature importance for explainability
+        # Pobieranie ważności cech dla wyjaśnialności
         crisis_keywords_present = []
         for word in self.crisis_lexicon:
             if re.search(r'\b' + word + r'\b', text.lower()):

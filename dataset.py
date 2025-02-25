@@ -1,5 +1,5 @@
 def create_sample_dataset():
-    """Create a sample dataset for testing the crisis predictor"""
+    """Utwórz przykładowy zestaw danych do testowania predyktora kryzysu"""
     
     sample_texts = [
         # Jasne przykłady kryzysu
