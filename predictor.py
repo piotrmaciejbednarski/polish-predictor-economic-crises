@@ -364,7 +364,7 @@ class EconomicCrisisPredictor:
         
         return {
             'sentiment': sentiment,
-            'sentiment_label': 'negative' if sentiment['compound'] <= -0.05 else 'positive' if sentiment['compound'] >= 0.05 else 'neutral',
+            'sentiment_label': 'negative' if sentiment['compound'] <= -0.08 else 'positive' if sentiment['compound'] >= 0.05 else 'neutral',
             'crisis_probability': float(crisis_prob),
             'crisis_score': float(crisis_score),
             'uncertainty_score': float(uncertainty_score),
